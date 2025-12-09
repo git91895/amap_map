@@ -116,6 +116,7 @@
             MAMapCustomStyleOptions *styleOption = [[MAMapCustomStyleOptions alloc] init];
             styleOption.styleData = ((FlutterStandardTypedData*)customStyleOptions[@"styleData"]).data;
             styleOption.styleExtraData = ((FlutterStandardTypedData*)customStyleOptions[@"styleExtraData"]).data;
+            styleOption.styleTextureData = ((FlutterStandardTypedData*)customStyleOptions[@"texturesData"]).data;
             [self setCustomMapStyleOptions:styleOption];
         }
     }
@@ -271,6 +272,7 @@
     } else if ([mapLanguage isEqualToString:@"en"]) {
         self.mapLanguage = @1;
     }
+    
 }
 
 @end

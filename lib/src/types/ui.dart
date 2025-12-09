@@ -210,10 +210,14 @@ class CustomStyleOptions {
   ///自定义扩展样式的二进制数据,对应下载的自定义地图文件中的style_extra.data中的二进制数据
   Uint8List? styleExtraData;
 
+  ///自定义纹理数据的二进制数据，对应下载的自定义地图文件中的textures.zip中的二进制数据
+  Uint8List? texturesData;
+
   CustomStyleOptions(
     this.enabled, {
     this.styleData,
     this.styleExtraData,
+    this.texturesData,
   });
 
   static CustomStyleOptions? fromMap(dynamic json) {
@@ -224,6 +228,7 @@ class CustomStyleOptions {
       json['enabled'] ?? false,
       styleData: json['styleData'],
       styleExtraData: json['styleExtraData'],
+      texturesData: json['texturesData'],
     );
   }
 
@@ -238,6 +243,7 @@ class CustomStyleOptions {
     addIfPresent('enabled', enabled);
     addIfPresent('styleData', styleData);
     addIfPresent('styleExtraData', styleExtraData);
+    addIfPresent('texturesData', texturesData);
     return json;
   }
 
@@ -249,15 +255,20 @@ class CustomStyleOptions {
     final CustomStyleOptions typedOther = other;
     return enabled == typedOther.enabled &&
         styleData == typedOther.styleData &&
-        styleExtraData == typedOther.styleExtraData;
+        styleExtraData == typedOther.styleExtraData &&
+        texturesData == typedOther.texturesData;
   }
 
   @override
   int get hashCode =>
-      Object.hashAll(<Object?>[enabled, styleData, styleExtraData]);
+      Object.hashAll(<Object?>[enabled, styleData, styleExtraData, texturesData]);
 
   CustomStyleOptions clone() {
-    return CustomStyleOptions(enabled,
-        styleData: styleData, styleExtraData: styleExtraData);
+    return CustomStyleOptions(
+      enabled,
+      styleData: styleData,
+      styleExtraData: styleExtraData,
+      texturesData: texturesData,
+    );
   }
 }
