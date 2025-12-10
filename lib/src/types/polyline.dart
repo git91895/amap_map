@@ -63,7 +63,10 @@ class Polyline extends BaseOverlay {
     this.customTexture,
     this.onTap,
     this.color = const Color(0xCCC4E0F0),
+    this.colorList,
+    this.gradient = false,
   })  : assert(points.isNotEmpty),
+        assert(colorList == null || colorList.isNotEmpty, 'colorList不能为空'),
         width = (width <= 0 ? 10 : width),
         alpha = (alpha < 0 ? 0 : (alpha > 1 ? 1 : alpha)),
         super();
@@ -82,6 +85,13 @@ class Polyline extends BaseOverlay {
 
   /// 覆盖物颜色，默认值为(0xCCC4E0F0).
   final Color color;
+
+  /// 颜色列表，用于渐变色轨迹。如果设置了colorList，gradient应该设置为true
+  /// 颜色值使用ARGB格式（32位整数）
+  final List<int>? colorList;
+
+  /// 是否使用渐变色，当colorList不为null时，应该设置为true
+  final bool gradient;
 
   /// 自定义纹理图片,注意: 如果设置了自定义纹理图片，则color的设置将无效;
   final BitmapDescriptor? customTexture;
@@ -114,6 +124,8 @@ class Polyline extends BaseOverlay {
     BitmapDescriptor? customTextureParam,
     ArgumentCallback<String>? onTapParam,
     Color? colorParam,
+    List<int>? colorListParam,
+    bool? gradientParam,
   }) {
     Polyline copyPolyline = Polyline(
       points: pointsParam ?? points,
@@ -127,6 +139,8 @@ class Polyline extends BaseOverlay {
       customTexture: customTextureParam ?? customTexture,
       onTap: onTapParam ?? onTap,
       color: colorParam ?? color,
+      colorList: colorListParam ?? colorList,
+      gradient: gradientParam ?? gradient,
     );
     copyPolyline.setIdForCopy(id);
     return copyPolyline;
@@ -157,6 +171,8 @@ class Polyline extends BaseOverlay {
     addIfPresent('joinType', joinType.index);
     addIfPresent('customTexture', customTexture?.toMap());
     addIfPresent('color', color.argbValue);
+    addIfPresent('colorList', colorList);
+    addIfPresent('gradient', gradient);
     return json;
   }
 
@@ -175,7 +191,9 @@ class Polyline extends BaseOverlay {
         dashLineType == typedOther.dashLineType &&
         capType == typedOther.capType &&
         joinType == typedOther.joinType &&
-        color == typedOther.color;
+        color == typedOther.color &&
+        listEquals(colorList, typedOther.colorList) &&
+        gradient == typedOther.gradient;
   }
 
   dynamic _pointsToJson() {
@@ -197,7 +215,9 @@ class Polyline extends BaseOverlay {
         dashLineType,
         capType,
         joinType,
-        color
+        color,
+        colorList,
+        gradient,
       ]);
 }
 
