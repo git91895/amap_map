@@ -252,6 +252,12 @@
         [weakSelf deselectCurrentMarker];
         result(nil);
     }];
+    // 选中指定标记点（执行放大+弹跳动画）
+    [self.channel addMethodName:@"marker#select" withHandler:^(FlutterMethodCall * _Nonnull call, FlutterResult  _Nonnull result) {
+        NSString *markerId = call.arguments[@"markerId"];
+        [weakSelf selectMarkerWithId:markerId];
+        result(nil);
+    }];
 }
 
 //MARK: MAMapViewDelegate
@@ -468,6 +474,32 @@
 
     self.selectedAnnotationView.transform = self.selectedViewOriginalTransform;
     self.selectedAnnotationView = nil;
+}
+
+/**
+ * @brief 根据 markerId 选中指定标记点（执行放大+弹跳动画）
+ * @param markerId 标记点ID
+ */
+- (void)selectMarkerWithId:(NSString *)markerId {
+    if (markerId == nil || markerId.length == 0) {
+        return;
+    }
+
+    // 遍历地图上的所有标注，找到匹配的标记点
+    for (id<MAAnnotation> annotation in self.mapView.annotations) {
+        if ([annotation isKindOfClass:[MAPointAnnotation class]]) {
+            MAPointAnnotation *pointAnnotation = (MAPointAnnotation *)annotation;
+            if ([pointAnnotation.markerId isEqualToString:markerId]) {
+                // 找到对应的 AnnotationView
+                MAAnnotationView *view = [self.mapView viewForAnnotation:pointAnnotation];
+                if (view != nil) {
+                    // 执行选中动画
+                    [self animateAnnotationView:view];
+                }
+                return;
+            }
+        }
+    }
 }
 
 /**

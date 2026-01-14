@@ -43,7 +43,8 @@ public class Const {
      */
     public static final String METHOD_MARKER_UPDATE = "markers#update";
     public static final String METHOD_MARKER_DESELECT = "marker#deselect";
-    public static final String[] METHOD_ID_LIST_FOR_MARKER = {METHOD_MARKER_UPDATE, METHOD_MARKER_DESELECT};
+    public static final String METHOD_MARKER_SELECT = "marker#select";
+    public static final String[] METHOD_ID_LIST_FOR_MARKER = {METHOD_MARKER_UPDATE, METHOD_MARKER_DESELECT, METHOD_MARKER_SELECT};
 
     /**
      * polygons

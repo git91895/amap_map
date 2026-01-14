@@ -77,6 +77,16 @@ class MethodChannelAMapFlutterMap implements AMapFlutterPlatform {
     return channel(mapId).invokeMethod<void>('marker#deselect');
   }
 
+  /// 选中指定标记点（执行放大+弹跳动画）
+  Future<void> selectMarker({
+    required int mapId,
+    required String markerId,
+  }) {
+    return channel(mapId).invokeMethod<void>('marker#select', {
+      'markerId': markerId,
+    });
+  }
+
   /// 更新polyline的数据
   Future<void> updatePolylines(
     PolylineUpdates polylineUpdates, {

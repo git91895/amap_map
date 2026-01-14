@@ -76,6 +76,11 @@ public class MarkersController
                 deselectCurrentMarker();
                 result.success(null);
                 break;
+            case Const.METHOD_MARKER_SELECT:
+                String markerId = call.argument("markerId");
+                selectMarkerWithId(markerId);
+                result.success(null);
+                break;
         }
     }
 
@@ -333,6 +338,32 @@ public class MarkersController
         selectedMarkerView.setScaleX(selectedViewOriginalScaleX);
         selectedMarkerView.setScaleY(selectedViewOriginalScaleY);
         selectedMarkerView = null;
+    }
+
+    /**
+     * 根据 markerId 选中指定标记点（执行放大+弹跳动画）
+     *
+     * @param markerId 标记点 ID (dartId)
+     */
+    private void selectMarkerWithId(String markerId) {
+        if (markerId == null || markerId.isEmpty()) {
+            return;
+        }
+
+        // 从 controllerMapByDartId 中获取 MarkerController
+        MarkerController controller = controllerMapByDartId.get(markerId);
+        if (controller == null) {
+            LogUtil.i(CLASS_NAME, "selectMarkerWithId: marker not found for id=" + markerId);
+            return;
+        }
+
+        // 获取 Marker 对象并执行动画
+        Marker marker = controller.getMarker();
+        if (marker != null) {
+            animateMarkerClick(marker);
+            selectedMarkerDartId = markerId;
+            LogUtil.i(CLASS_NAME, "selectMarkerWithId: selected marker id=" + markerId);
+        }
     }
 
     /**

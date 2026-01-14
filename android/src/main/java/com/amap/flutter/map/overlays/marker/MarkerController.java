@@ -108,4 +108,8 @@ class MarkerController implements MarkerOptionsSink {
     public void hideInfoWindow() {
         marker.hideInfoWindow();
     }
+
+    public Marker getMarker() {
+        return marker;
+    }
 }

@@ -153,4 +153,9 @@ class AMapController {
   Future<void> deselectMarker() {
     return _methodChannel.deselectMarker(mapId: mapId);
   }
+
+  /// 选中指定标记点（执行放大+弹跳动画）
+  Future<void> selectMarker(String markerId) {
+    return _methodChannel.selectMarker(mapId: mapId, markerId: markerId);
+  }
 }
