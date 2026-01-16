@@ -75,6 +75,10 @@ class AMapPlatformViewFactory extends PlatformViewFactory {
                 builder.setInitialPolygons(params.get("polygonsToAdd"));
             }
 
+            if (params.containsKey("tileOverlaysToAdd")) {
+                builder.setInitialTileOverlays(params.get("tileOverlaysToAdd"));
+            }
+
 
             if (params.containsKey("apiKey")) {
                 ConvertUtil.checkApiKey(params.get("apiKey"));

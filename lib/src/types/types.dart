@@ -19,6 +19,8 @@ export 'polyline.dart';
 export 'polyline_updates.dart';
 export 'polygon.dart';
 export 'polygon_updates.dart';
+export 'tile_overlay.dart';
+export 'tile_overlay_updates.dart';
 export 'bitmap.dart';
 export 'screen_coordinate.dart';
 export 'info_window_adapter.dart';

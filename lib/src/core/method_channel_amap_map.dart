@@ -109,6 +109,17 @@ class MethodChannelAMapFlutterMap implements AMapFlutterPlatform {
     );
   }
 
+  /// 更新 TileOverlay 的数据
+  Future<void> updateTileOverlays(
+    TileOverlayUpdates tileOverlayUpdates, {
+    required int mapId,
+  }) {
+    return channel(mapId).invokeMethod<void>(
+      'tileOverlays#update',
+      tileOverlayUpdates.toMap(),
+    );
+  }
+
   @override
   void dispose({required int id}) {
     if (_channels.containsKey(id)) {

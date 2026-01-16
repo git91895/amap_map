@@ -363,6 +363,11 @@ public class MapController
     }
 
     @Override
+    public void setInitialTileOverlays(Object tileOverlaysObject) {
+        //不实现
+    }
+
+    @Override
     public void setMapLanguage(String mapLanguage) {
         if (null != amap) {
             amap.setMapLanguage(mapLanguage);

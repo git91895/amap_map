@@ -57,4 +57,10 @@ public class Const {
      */
     public static final String METHOD_POLYLINE_UPDATE = "polylines#update";
     public static final String[] METHOD_ID_LIST_FOR_POLYLINE = {METHOD_POLYLINE_UPDATE};
+
+    /**
+     * tileOverlays
+     */
+    public static final String METHOD_TILE_OVERLAY_UPDATE = "tileOverlays#update";
+    public static final String[] METHOD_ID_LIST_FOR_TILE_OVERLAY = {METHOD_TILE_OVERLAY_UPDATE};
 }

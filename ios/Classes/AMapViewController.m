@@ -21,6 +21,8 @@
 #import "MAPolygon+Flutter.h"
 #import "MAPolygonRenderer+Flutter.h"
 #import "AMapPolygon.h"
+#import "AMapTileOverlayController.h"
+#import "AMapTileOverlay.h"
 #import <AMapFoundationKit/AMapFoundationKit.h>
 #import "AMapLocation.h"
 #import "AMapJsonUtils.h"
@@ -37,6 +39,7 @@
 @property (nonatomic,strong) AMapMarkerController *markerController;
 @property (nonatomic,strong) AMapPolylineController *polylinesController;
 @property (nonatomic,strong) AMapPolygonController *polygonsController;
+@property (nonatomic,strong) AMapTileOverlayController *tileOverlaysController;
 
 @property (nonatomic,copy) FlutterResult waitForMapCallBack;//waitForMap的回调，仅当地图没有加载完成时缓存使用
 @property (nonatomic,assign) BOOL mapInitCompleted;//地图初始化完成，首帧回调的标记
@@ -109,6 +112,9 @@
         _polygonsController = [[AMapPolygonController alloc] init:_channel
                                                           mapView:_mapView
                                                         registrar:registrar];
+        _tileOverlaysController = [[AMapTileOverlayController alloc] init:_channel
+                                                                  mapView:_mapView
+                                                                registrar:registrar];
         id markersToAdd = args[@"markersToAdd"];
         if ([markersToAdd isKindOfClass:[NSArray class]]) {
             [_markerController addMarkers:markersToAdd];
@@ -120,6 +126,10 @@
         id polygonsToAdd = args[@"polygonsToAdd"];
         if ([polygonsToAdd isKindOfClass:[NSArray class]]) {
             [_polygonsController addPolygons:polygonsToAdd];
+        }
+        id tileOverlaysToAdd = args[@"tileOverlaysToAdd"];
+        if ([tileOverlaysToAdd isKindOfClass:[NSArray class]]) {
+            [_tileOverlaysController addTileOverlays:tileOverlaysToAdd];
         }
         
         [self setMethodCallHandler];
@@ -592,6 +602,14 @@
         MAPolygonRenderer *polygonRenderer = [[MAPolygonRenderer alloc] initWithPolygon:polygon];
         [polygonRenderer updateRenderWithPolygon:fPolygon];
         return polygonRenderer;
+    } else if ([overlay isKindOfClass:[AMapURLTileOverlay class]]) {
+        AMapURLTileOverlay *tileOverlay = (AMapURLTileOverlay *)overlay;
+        AMapTileOverlay *model = [_tileOverlaysController tileOverlayForId:tileOverlay.tileOverlayId];
+        MATileOverlayRenderer *renderer = [[MATileOverlayRenderer alloc] initWithTileOverlay:tileOverlay];
+        if (model) {
+            renderer.alpha = 1.0 - model.transparency;
+        }
+        return renderer;
     } else {
         return nil;
     }

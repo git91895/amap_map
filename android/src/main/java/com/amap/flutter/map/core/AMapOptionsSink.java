@@ -59,6 +59,8 @@ public interface AMapOptionsSink extends UISettingsSink {
 
     void setInitialPolygons(Object initialPolygons);
 
+    void setInitialTileOverlays(Object initialTileOverlays);
+
     /**
      * 设置地图语言
      *

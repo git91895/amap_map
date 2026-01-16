@@ -51,6 +51,8 @@ class AMapOptionsBuilder implements AMapOptionsSink, UISettingsSink {
 
     private Object initialPolygons;
 
+    private Object initialTileOverlays;
+
     private String mapLanguage;
 
     AMapPlatformView build(int id,
@@ -108,6 +110,11 @@ class AMapOptionsBuilder implements AMapOptionsSink, UISettingsSink {
             if (null != initialPolygons) {
                 List<Object> polygonList = (List<Object>) initialPolygons;
                 aMapPlatformView.getPolygonsController().addByList(polygonList);
+            }
+
+            if (null != initialTileOverlays) {
+                List<Object> tileOverlayList = (List<Object>) initialTileOverlays;
+                aMapPlatformView.getTileOverlaysController().addByList(tileOverlayList);
             }
 
             aMapPlatformView.getMapController().setMapLanguage(mapLanguage);
@@ -244,6 +251,11 @@ class AMapOptionsBuilder implements AMapOptionsSink, UISettingsSink {
     @Override
     public void setInitialPolygons(Object polygonsObject) {
         this.initialPolygons = polygonsObject;
+    }
+
+    @Override
+    public void setInitialTileOverlays(Object tileOverlaysObject) {
+        this.initialTileOverlays = tileOverlaysObject;
     }
 
     @Override
