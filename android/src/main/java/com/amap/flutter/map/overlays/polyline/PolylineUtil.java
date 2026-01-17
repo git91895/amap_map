@@ -99,6 +99,12 @@ class PolylineUtil {
             sink.setColorList((List<Integer>) ConvertUtil.toList(colorList));
         }
 
+        // 解析 zIndex，用于控制轨迹线在 TileOverlay 之上显示
+        final Object zIndex = data.get("zIndex");
+        if (zIndex != null) {
+            sink.setZIndex(ConvertUtil.toFloat(zIndex));
+        }
+
         final String dartId = (String) data.get("id");
         if (TextUtils.isEmpty(dartId)) {
             Log.w(CLASS_NAME, "没有传入正确的dart层ID, 请确认对应的key值是否正确！！！");

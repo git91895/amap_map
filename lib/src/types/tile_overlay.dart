@@ -113,6 +113,12 @@ class TileOverlay extends BaseOverlay {
   /// 内存缓存大小（个数）
   final int memoryCacheSize;
 
+  /// 预加载边界瓦片数（默认1，即预加载周围1圈瓦片）
+  final int preloadMargin;
+
+  /// 最大并行请求数（默认4）
+  final int maxConcurrentRequests;
+
   TileOverlay({
     required this.tileProvider,
     this.visible = true,
@@ -124,6 +130,8 @@ class TileOverlay extends BaseOverlay {
     this.diskCacheSize = 100,
     this.memoryCacheEnabled = true,
     this.memoryCacheSize = 50,
+    this.preloadMargin = 1,
+    this.maxConcurrentRequests = 4,
   }) : super();
 
   /// 复制并修改属性
@@ -138,6 +146,8 @@ class TileOverlay extends BaseOverlay {
     int? diskCacheSizeParam,
     bool? memoryCacheEnabledParam,
     int? memoryCacheSizeParam,
+    int? preloadMarginParam,
+    int? maxConcurrentRequestsParam,
   }) {
     TileOverlay copy = TileOverlay(
       tileProvider: tileProviderParam ?? tileProvider,
@@ -150,6 +160,8 @@ class TileOverlay extends BaseOverlay {
       diskCacheSize: diskCacheSizeParam ?? diskCacheSize,
       memoryCacheEnabled: memoryCacheEnabledParam ?? memoryCacheEnabled,
       memoryCacheSize: memoryCacheSizeParam ?? memoryCacheSize,
+      preloadMargin: preloadMarginParam ?? preloadMargin,
+      maxConcurrentRequests: maxConcurrentRequestsParam ?? maxConcurrentRequests,
     );
     copy.setIdForCopy(id);
     return copy;
@@ -179,6 +191,8 @@ class TileOverlay extends BaseOverlay {
     addIfPresent('diskCacheSize', diskCacheSize);
     addIfPresent('memoryCacheEnabled', memoryCacheEnabled);
     addIfPresent('memoryCacheSize', memoryCacheSize);
+    addIfPresent('preloadMargin', preloadMargin);
+    addIfPresent('maxConcurrentRequests', maxConcurrentRequests);
 
     return json;
   }
@@ -198,7 +212,9 @@ class TileOverlay extends BaseOverlay {
         diskCacheEnabled == other.diskCacheEnabled &&
         diskCacheSize == other.diskCacheSize &&
         memoryCacheEnabled == other.memoryCacheEnabled &&
-        memoryCacheSize == other.memoryCacheSize;
+        memoryCacheSize == other.memoryCacheSize &&
+        preloadMargin == other.preloadMargin &&
+        maxConcurrentRequests == other.maxConcurrentRequests;
   }
 
   @override
@@ -214,6 +230,8 @@ class TileOverlay extends BaseOverlay {
         diskCacheSize,
         memoryCacheEnabled,
         memoryCacheSize,
+        preloadMargin,
+        maxConcurrentRequests,
       ]);
 }
 

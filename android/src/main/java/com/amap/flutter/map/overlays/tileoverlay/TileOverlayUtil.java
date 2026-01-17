@@ -92,6 +92,18 @@ public class TileOverlayUtil {
             sink.setMemoryCacheSize(ConvertUtil.toInt(memoryCacheSize));
         }
 
+        // P1: Parse preload margin
+        Object preloadMargin = data.get("preloadMargin");
+        if (preloadMargin != null) {
+            sink.setPreloadMargin(ConvertUtil.toInt(preloadMargin));
+        }
+
+        // P1: Parse max concurrent requests
+        Object maxConcurrentRequests = data.get("maxConcurrentRequests");
+        if (maxConcurrentRequests != null) {
+            sink.setMaxConcurrentRequests(ConvertUtil.toInt(maxConcurrentRequests));
+        }
+
         return dartId;
     }
 }

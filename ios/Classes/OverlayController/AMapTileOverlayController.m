@@ -87,8 +87,10 @@
         self.tileOverlays[model.id_] = tileOverlay;
 
         // 添加到地图
+        // 使用 MAOverlayLevelAboveRoads 层级，确保 TileOverlay 在道路之上但在轨迹线之下
+        // 轨迹线(Polyline)默认使用 MAOverlayLevelAboveLabels，层级更高
         if (model.visible) {
-            [self.mapView addOverlay:tileOverlay];
+            [self.mapView addOverlay:tileOverlay level:MAOverlayLevelAboveRoads];
         }
     }
 }
@@ -121,12 +123,12 @@
             // 从地图移除
             [self.mapView removeOverlay:tileOverlay];
         } else if (!wasVisible && model.visible) {
-            // 添加到地图
-            [self.mapView addOverlay:tileOverlay];
+            // 添加到地图，使用 MAOverlayLevelAboveRoads 确保在轨迹线之下
+            [self.mapView addOverlay:tileOverlay level:MAOverlayLevelAboveRoads];
         } else if (model.visible) {
             // 刷新瓦片 - 通过移除再添加来刷新
             [self.mapView removeOverlay:tileOverlay];
-            [self.mapView addOverlay:tileOverlay];
+            [self.mapView addOverlay:tileOverlay level:MAOverlayLevelAboveRoads];
         }
     }
 }

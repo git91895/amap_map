@@ -119,4 +119,9 @@ class PolylineController implements PolylineOptionsSink {
         options.lineJoinType(joinType);
         polyline.setOptions(options);
     }
+
+    @Override
+    public void setZIndex(float zIndex) {
+        polyline.setZIndex(zIndex);
+    }
 }

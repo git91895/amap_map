@@ -16,6 +16,8 @@ public class TileOverlayController implements TileOverlayOptionsSink {
     private int diskCacheSize = 100;
     private boolean memoryCacheEnabled = true;
     private int memoryCacheSize = 50;
+    private int preloadMargin = 1;
+    private int maxConcurrentRequests = 4;
 
     public TileOverlayController(TileOverlay tileOverlay) {
         this.tileOverlay = tileOverlay;
@@ -104,6 +106,16 @@ public class TileOverlayController implements TileOverlayOptionsSink {
         this.memoryCacheSize = size;
     }
 
+    @Override
+    public void setPreloadMargin(int margin) {
+        this.preloadMargin = margin;
+    }
+
+    @Override
+    public void setMaxConcurrentRequests(int count) {
+        this.maxConcurrentRequests = count;
+    }
+
     public String getUrlTemplate() {
         return urlTemplate;
     }
@@ -138,5 +150,13 @@ public class TileOverlayController implements TileOverlayOptionsSink {
 
     public int getMemoryCacheSize() {
         return memoryCacheSize;
+    }
+
+    public int getPreloadMargin() {
+        return preloadMargin;
+    }
+
+    public int getMaxConcurrentRequests() {
+        return maxConcurrentRequests;
     }
 }

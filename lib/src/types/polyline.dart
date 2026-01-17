@@ -65,6 +65,7 @@ class Polyline extends BaseOverlay {
     this.color = const Color(0xCCC4E0F0),
     this.colorList,
     this.gradient = false,
+    this.zIndex = 10.0,
   })  : assert(points.isNotEmpty),
         assert(colorList == null || colorList.isNotEmpty, 'colorList不能为空'),
         width = (width <= 0 ? 10 : width),
@@ -111,11 +112,14 @@ class Polyline extends BaseOverlay {
   /// 点击回调（回调参数为id)
   final ArgumentCallback<String>? onTap;
 
+  /// 层级，数值越大越靠上，默认为10，确保在TileOverlay之上
+  final double zIndex;
+
   /// 实际copy函数
   Polyline copyWith({
     List<LatLng>? pointsParam,
     double? widthParam,
-    int? zIndexParam,
+    double? zIndexParam,
     bool? visibleParam,
     double? alphaParam,
     DashLineType? dashLineTypeParam,
@@ -141,6 +145,7 @@ class Polyline extends BaseOverlay {
       color: colorParam ?? color,
       colorList: colorListParam ?? colorList,
       gradient: gradientParam ?? gradient,
+      zIndex: zIndexParam ?? zIndex,
     );
     copyPolyline.setIdForCopy(id);
     return copyPolyline;
@@ -173,6 +178,7 @@ class Polyline extends BaseOverlay {
     addIfPresent('color', color.argbValue);
     addIfPresent('colorList', colorList);
     addIfPresent('gradient', gradient);
+    addIfPresent('zIndex', zIndex);
     return json;
   }
 
@@ -193,7 +199,8 @@ class Polyline extends BaseOverlay {
         joinType == typedOther.joinType &&
         color == typedOther.color &&
         listEquals(colorList, typedOther.colorList) &&
-        gradient == typedOther.gradient;
+        gradient == typedOther.gradient &&
+        zIndex == typedOther.zIndex;
   }
 
   dynamic _pointsToJson() {
@@ -218,6 +225,7 @@ class Polyline extends BaseOverlay {
         color,
         colorList,
         gradient,
+        zIndex,
       ]);
 }
 

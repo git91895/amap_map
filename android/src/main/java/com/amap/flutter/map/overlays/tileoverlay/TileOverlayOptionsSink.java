@@ -16,4 +16,6 @@ public interface TileOverlayOptionsSink {
     void setDiskCacheSize(int size);
     void setMemoryCacheEnabled(boolean enabled);
     void setMemoryCacheSize(int size);
+    void setPreloadMargin(int margin);
+    void setMaxConcurrentRequests(int count);
 }
