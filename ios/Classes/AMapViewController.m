@@ -420,7 +420,7 @@
 }
 
 /**
- * @brief 执行标注视图的点击动画（放大+多次弹跳）
+ * @brief 执行标注视图的点击动画（仅放大）
  * @param view 需要执行动画的标注视图
  */
 - (void)animateAnnotationView:(MAAnnotationView *)view {
@@ -435,19 +435,14 @@
     self.selectedAnnotationView = view;
     self.selectedViewOriginalTransform = originalTransform;
 
-    // 先执行放大动画
-    [UIView animateWithDuration:0.4
+    // 执行放大动画
+    [UIView animateWithDuration:0.25
                           delay:0
                         options:UIViewAnimationOptionCurveEaseOut
                      animations:^{
         view.transform = CGAffineTransformScale(originalTransform, 1.4, 1.4);
     }
-                     completion:^(BOOL finished) {
-        // 放大完成后开始多次弹跳
-        [self performBounceAnimationOnView:view
-                            originalCenter:originalCenter
-                               bounceIndex:0];
-    }];
+                     completion:nil];
 }
 
 /**
