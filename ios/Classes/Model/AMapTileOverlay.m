@@ -9,6 +9,8 @@
 
 #import "AMapTileOverlay.h"
 #import <CommonCrypto/CommonDigest.h>
+#import <ImageIO/ImageIO.h>
+#import <MobileCoreServices/MobileCoreServices.h>
 
 /// P0: Global URL cache for memory optimization
 static NSCache<NSString *, NSURL *> *_urlCache;
@@ -275,6 +277,27 @@ static NSOperationQueue *_tileLoadQueue;
     } else {
         self.maxConcurrentRequests = 4;
     }
+
+    // Parse coordinate type (0=WGS84, 1=GCJ02, 2=BD09)
+    if (dict[@"coordinateType"]) {
+        self.coordinateType = [dict[@"coordinateType"] integerValue];
+    } else {
+        self.coordinateType = 0; // Default WGS84
+    }
+
+    // Parse flipY for TMS format
+    if (dict[@"flipY"] != nil) {
+        self.flipY = [dict[@"flipY"] boolValue];
+    } else {
+        self.flipY = NO;
+    }
+
+    // Parse retinaMode for high-DPI displays
+    if (dict[@"retinaMode"] != nil) {
+        self.retinaMode = [dict[@"retinaMode"] boolValue];
+    } else {
+        self.retinaMode = NO;
+    }
 }
 
 @end
@@ -324,6 +347,11 @@ static NSOperationQueue *_tileLoadQueue;
     self.preloadMargin = model.preloadMargin;
     self.maxConcurrentRequests = model.maxConcurrentRequests;
 
+    // Store coordinate type and flipY settings
+    self.coordinateType = model.coordinateType;
+    self.flipY = model.flipY;
+    self.retinaMode = model.retinaMode;
+
     // P0: Configure memory cache size
     if (self.memoryCacheEnabled && self.memoryCacheSize > 0) {
         _urlCache.countLimit = self.memoryCacheSize;
@@ -371,6 +399,7 @@ static NSOperationQueue *_tileLoadQueue;
 
 /// 重写 URL 生成方法
 /// P0: Use memory cache for URL objects
+/// 支持 Y 坐标翻转 (TMS 格式)
 - (NSURL *)URLForTilePath:(MATileOverlayPath)path {
     if (self.urlTemplate == nil || self.urlTemplate.length == 0) {
         return nil;
@@ -386,10 +415,17 @@ static NSOperationQueue *_tileLoadQueue;
         }
     }
 
+    // 计算 Y 坐标 (支持 TMS 格式翻转)
+    NSInteger y = path.y;
+    if (self.flipY) {
+        // TMS 格式: y = 2^z - 1 - y
+        y = (1 << path.z) - 1 - path.y;
+    }
+
     // 替换 URL 模板中的占位符
     NSString *urlString = self.urlTemplate;
     urlString = [urlString stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat:@"%ld", (long)path.x]];
-    urlString = [urlString stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat:@"%ld", (long)path.y]];
+    urlString = [urlString stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat:@"%ld", (long)y]];
     urlString = [urlString stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat:@"%ld", (long)path.z]];
 
     NSURL *url = [NSURL URLWithString:urlString];
@@ -402,8 +438,57 @@ static NSOperationQueue *_tileLoadQueue;
     return url;
 }
 
+/// 将图片数据转换为 PNG 格式
+/// 支持 WebP、JPEG 等格式转换为 PNG
+- (NSData *)convertToPNGData:(NSData *)imageData {
+    if (!imageData || imageData.length == 0) {
+        return nil;
+    }
+
+    // 检查是否已经是 PNG 格式
+    const unsigned char *bytes = (const unsigned char *)imageData.bytes;
+    if (imageData.length >= 8 &&
+        bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 &&
+        bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A) {
+        // 已经是 PNG，直接返回
+        return imageData;
+    }
+
+    // 使用 ImageIO 进行格式转换
+    CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
+    if (!source) {
+        return imageData; // 无法解析，返回原始数据
+    }
+
+    CGImageRef cgImage = CGImageSourceCreateImageAtIndex(source, 0, NULL);
+    CFRelease(source);
+
+    if (!cgImage) {
+        return imageData; // 无法创建图像，返回原始数据
+    }
+
+    // 转换为 PNG
+    NSMutableData *pngData = [NSMutableData data];
+    CGImageDestinationRef destination = CGImageDestinationCreateWithData((__bridge CFMutableDataRef)pngData, kUTTypePNG, 1, NULL);
+
+    if (!destination) {
+        CGImageRelease(cgImage);
+        return imageData;
+    }
+
+    CGImageDestinationAddImage(destination, cgImage, NULL);
+    BOOL success = CGImageDestinationFinalize(destination);
+
+    CFRelease(destination);
+    CGImageRelease(cgImage);
+
+    return success ? pngData : imageData;
+}
+
 /// 重写瓦片加载方法 - 实现真正的瓦片数据缓存
 /// 这是解决每次滑动重复加载问题的关键方法
+/// 支持 WebP 自动转换为 PNG
+/// 支持 Retina 模式 - 请求 z+1 级别的 4 张瓦片合成高清图
 - (void)loadTileAtPath:(MATileOverlayPath)path result:(void (^)(NSData * _Nullable, NSError * _Nullable))result {
     if (!result) {
         return;
@@ -412,22 +497,40 @@ static NSOperationQueue *_tileLoadQueue;
     NSString *cacheKey = [self cacheKeyForPath:path];
     AMapTileCache *cache = [AMapTileCache sharedCache];
 
-    // 1. 先检查缓存
+    // 1. 先检查缓存 (缓存中已经是转换后的 PNG 格式)
     NSData *cachedData = [cache tileDataForKey:cacheKey];
     if (cachedData) {
         // 缓存命中，直接返回
+        NSLog(@"🗺️ [TileOverlay] Cache HIT for tile z=%ld x=%ld y=%ld (size=%lu bytes)", (long)path.z, (long)path.x, (long)path.y, (unsigned long)cachedData.length);
         result(cachedData, nil);
         return;
     }
 
-    // 2. 缓存未命中，从网络加载
+    NSLog(@"🗺️ [TileOverlay] Cache MISS for tile z=%ld x=%ld y=%ld", (long)path.z, (long)path.x, (long)path.y);
+
+    // 2. 判断是否使用 Retina 模式
+    if (self.retinaMode && path.z < self.maxZoom) {
+        // Retina 模式：请求 z+1 级别的 4 张瓦片并合成
+        [self loadRetinaTileAtPath:path cacheKey:cacheKey result:result];
+        return;
+    }
+
+    // 3. 普通模式：从网络加载单张瓦片
+    [self loadSingleTileAtPath:path cacheKey:cacheKey result:result];
+}
+
+/// 加载单张瓦片 (普通模式)
+- (void)loadSingleTileAtPath:(MATileOverlayPath)path cacheKey:(NSString *)cacheKey result:(void (^)(NSData * _Nullable, NSError * _Nullable))result {
     NSURL *url = [self URLForTilePath:path];
     if (!url) {
+        NSLog(@"🗺️ [TileOverlay] Invalid URL for tile z=%ld x=%ld y=%ld", (long)path.z, (long)path.x, (long)path.y);
         result(nil, [NSError errorWithDomain:@"AMapTileOverlay"
                                         code:-1
                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid tile URL"}]);
         return;
     }
+
+    NSLog(@"🗺️ [TileOverlay] Loading tile z=%ld x=%ld y=%ld URL=%@", (long)path.z, (long)path.x, (long)path.y, url.absoluteString);
 
     // 配置请求
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
@@ -441,7 +544,9 @@ static NSOperationQueue *_tileLoadQueue;
     config.timeoutIntervalForResource = 60.0;
 
     NSURLSession *session = [NSURLSession sessionWithConfiguration:config];
+    AMapTileCache *cache = [AMapTileCache sharedCache];
 
+    __weak typeof(self) weakSelf = self;
     NSURLSessionDataTask *task = [session dataTaskWithRequest:request
                                             completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
@@ -462,14 +567,246 @@ static NSOperationQueue *_tileLoadQueue;
         }
 
         if (data && data.length > 0) {
-            // 存入缓存
+            NSLog(@"🗺️ [TileOverlay] Downloaded tile (size=%lu bytes), caching...", (unsigned long)data.length);
+            // 直接缓存原始数据，不做格式转换
             [cache setTileData:data forKey:cacheKey];
+            result(data, nil);
+        } else {
+            NSLog(@"🗺️ [TileOverlay] Download returned empty data");
+            result(data, nil);
         }
-
-        result(data, nil);
     }];
 
     [task resume];
+}
+
+/// Retina 模式加载：请求 z+1 级别的 4 张瓦片并合成为一张 512x512 的高清瓦片
+/// 原理：z+1 级别的 (2x, 2y), (2x+1, 2y), (2x, 2y+1), (2x+1, 2y+1) 合成为 z 级别的 (x, y)
+- (void)loadRetinaTileAtPath:(MATileOverlayPath)path cacheKey:(NSString *)cacheKey result:(void (^)(NSData * _Nullable, NSError * _Nullable))result {
+
+    NSInteger nextZ = path.z + 1;
+    NSInteger baseX = path.x * 2;
+    NSInteger baseY = path.y * 2;
+
+    // 4 张子瓦片的坐标 (左上, 右上, 左下, 右下)
+    MATileOverlayPath paths[4];
+    paths[0] = (MATileOverlayPath){.x = baseX, .y = baseY, .z = nextZ, .contentScaleFactor = path.contentScaleFactor};
+    paths[1] = (MATileOverlayPath){.x = baseX + 1, .y = baseY, .z = nextZ, .contentScaleFactor = path.contentScaleFactor};
+    paths[2] = (MATileOverlayPath){.x = baseX, .y = baseY + 1, .z = nextZ, .contentScaleFactor = path.contentScaleFactor};
+    paths[3] = (MATileOverlayPath){.x = baseX + 1, .y = baseY + 1, .z = nextZ, .contentScaleFactor = path.contentScaleFactor};
+
+    __block NSMutableArray<NSData *> *tileDataArray = [NSMutableArray arrayWithCapacity:4];
+    for (int i = 0; i < 4; i++) {
+        [tileDataArray addObject:[NSNull null]];
+    }
+
+    __block NSInteger loadedCount = 0;
+    __block BOOL hasError = NO;
+
+    dispatch_group_t group = dispatch_group_create();
+    AMapTileCache *cache = [AMapTileCache sharedCache];
+
+    __weak typeof(self) weakSelf = self;
+
+    for (int i = 0; i < 4; i++) {
+        dispatch_group_enter(group);
+
+        MATileOverlayPath subPath = paths[i];
+        NSString *subCacheKey = [self cacheKeyForPath:subPath];
+
+        // 先检查子瓦片缓存
+        NSData *subCachedData = [cache tileDataForKey:subCacheKey];
+        if (subCachedData) {
+            @synchronized (tileDataArray) {
+                tileDataArray[i] = subCachedData;
+                loadedCount++;
+            }
+            dispatch_group_leave(group);
+            continue;
+        }
+
+        // 从网络加载子瓦片
+        NSURL *url = [self URLForTilePath:subPath];
+        if (!url) {
+            @synchronized (tileDataArray) {
+                hasError = YES;
+            }
+            dispatch_group_leave(group);
+            continue;
+        }
+
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+        request.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
+        request.timeoutInterval = 30.0;
+
+        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+        config.HTTPMaximumConnectionsPerHost = self.maxConcurrentRequests > 0 ? self.maxConcurrentRequests : 4;
+        NSURLSession *session = [NSURLSession sessionWithConfiguration:config];
+
+        NSURLSessionDataTask *task = [session dataTaskWithRequest:request
+                                                completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            if (error || !data || data.length == 0) {
+                @synchronized (tileDataArray) {
+                    hasError = YES;
+                }
+                dispatch_group_leave(group);
+                return;
+            }
+
+            // 检查 HTTP 状态码
+            if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+                NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+                if (httpResponse.statusCode != 200) {
+                    @synchronized (tileDataArray) {
+                        hasError = YES;
+                    }
+                    dispatch_group_leave(group);
+                    return;
+                }
+            }
+
+            // 转换为 PNG
+            NSData *pngData = [weakSelf convertToPNGData:data];
+            if (pngData) {
+                // 缓存子瓦片
+                [cache setTileData:pngData forKey:subCacheKey];
+
+                @synchronized (tileDataArray) {
+                    tileDataArray[i] = pngData;
+                    loadedCount++;
+                }
+            } else {
+                @synchronized (tileDataArray) {
+                    hasError = YES;
+                }
+            }
+
+            dispatch_group_leave(group);
+        }];
+
+        [task resume];
+    }
+
+    // 等待所有子瓦片加载完成
+    dispatch_group_notify(group, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        @synchronized (tileDataArray) {
+            if (hasError || loadedCount < 4) {
+                // 如果有错误或加载不完整，回退到普通模式
+                [weakSelf loadSingleTileAtPath:path cacheKey:cacheKey result:result];
+                return;
+            }
+
+            // 合成 4 张瓦片为一张 512x512 的高清瓦片
+            NSData *mergedData = [weakSelf mergeTileImages:tileDataArray];
+            if (mergedData) {
+                [cache setTileData:mergedData forKey:cacheKey];
+                result(mergedData, nil);
+            } else {
+                // 合成失败，回退到普通模式
+                [weakSelf loadSingleTileAtPath:path cacheKey:cacheKey result:result];
+            }
+        }
+    });
+}
+
+/// 合成 4 张瓦片图像为一张 512x512 的高清瓦片
+/// 输入：4 张 256x256 的瓦片 [左上, 右上, 左下, 右下]
+/// 输出：1 张 512x512 的合成瓦片
+- (NSData *)mergeTileImages:(NSArray<NSData *> *)tileDataArray {
+    if (tileDataArray.count != 4) {
+        return nil;
+    }
+
+    // 创建 4 个 CGImage
+    CGImageRef images[4];
+    for (int i = 0; i < 4; i++) {
+        id data = tileDataArray[i];
+        if (![data isKindOfClass:[NSData class]]) {
+            return nil;
+        }
+
+        CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)data, NULL);
+        if (!source) {
+            // 释放已创建的图像
+            for (int j = 0; j < i; j++) {
+                CGImageRelease(images[j]);
+            }
+            return nil;
+        }
+
+        images[i] = CGImageSourceCreateImageAtIndex(source, 0, NULL);
+        CFRelease(source);
+
+        if (!images[i]) {
+            // 释放已创建的图像
+            for (int j = 0; j < i; j++) {
+                CGImageRelease(images[j]);
+            }
+            return nil;
+        }
+    }
+
+    // 获取单张瓦片尺寸 (通常是 256x256)
+    size_t tileWidth = CGImageGetWidth(images[0]);
+    size_t tileHeight = CGImageGetHeight(images[0]);
+
+    // 创建 512x512 的画布
+    size_t canvasWidth = tileWidth * 2;
+    size_t canvasHeight = tileHeight * 2;
+
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef context = CGBitmapContextCreate(NULL, canvasWidth, canvasHeight, 8,
+                                                  canvasWidth * 4, colorSpace,
+                                                  kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+
+    if (!context) {
+        for (int i = 0; i < 4; i++) {
+            CGImageRelease(images[i]);
+        }
+        return nil;
+    }
+
+    // 绘制 4 张瓦片到画布上
+    // 注意：CoreGraphics 坐标系 Y 轴向上，所以需要调整位置
+    // 左上 (0, tileHeight)
+    CGContextDrawImage(context, CGRectMake(0, tileHeight, tileWidth, tileHeight), images[0]);
+    // 右上 (tileWidth, tileHeight)
+    CGContextDrawImage(context, CGRectMake(tileWidth, tileHeight, tileWidth, tileHeight), images[1]);
+    // 左下 (0, 0)
+    CGContextDrawImage(context, CGRectMake(0, 0, tileWidth, tileHeight), images[2]);
+    // 右下 (tileWidth, 0)
+    CGContextDrawImage(context, CGRectMake(tileWidth, 0, tileWidth, tileHeight), images[3]);
+
+    // 释放原图像
+    for (int i = 0; i < 4; i++) {
+        CGImageRelease(images[i]);
+    }
+
+    // 获取合成后的图像
+    CGImageRef mergedImage = CGBitmapContextCreateImage(context);
+    CGContextRelease(context);
+
+    if (!mergedImage) {
+        return nil;
+    }
+
+    // 转换为 PNG 数据
+    NSMutableData *pngData = [NSMutableData data];
+    CGImageDestinationRef destination = CGImageDestinationCreateWithData((__bridge CFMutableDataRef)pngData, kUTTypePNG, 1, NULL);
+
+    if (!destination) {
+        CGImageRelease(mergedImage);
+        return nil;
+    }
+
+    CGImageDestinationAddImage(destination, mergedImage, NULL);
+    BOOL success = CGImageDestinationFinalize(destination);
+
+    CFRelease(destination);
+    CGImageRelease(mergedImage);
+
+    return success ? pngData : nil;
 }
 
 /// P1: Get shared tile load operation queue

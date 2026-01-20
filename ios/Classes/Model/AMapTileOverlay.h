@@ -58,6 +58,16 @@ NS_ASSUME_NONNULL_BEGIN
 /// 最大并行请求数（P1优化）
 @property (nonatomic, assign) NSInteger maxConcurrentRequests;
 
+/// 坐标系类型: 0=WGS84, 1=GCJ02, 2=BD09 (默认0)
+@property (nonatomic, assign) NSInteger coordinateType;
+
+/// 是否翻转Y坐标 (TMS格式需要翻转)
+@property (nonatomic, assign) BOOL flipY;
+
+/// 是否启用高清模式 (Retina屏幕优化)
+/// 启用后会请求更高级别的瓦片以提高清晰度
+@property (nonatomic, assign) BOOL retinaMode;
+
 /// 从字典创建实例
 + (instancetype)tileOverlayWithDict:(NSDictionary *)dict;
 
@@ -99,6 +109,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// P1: 最大并行请求数
 @property (nonatomic, assign) NSInteger maxConcurrentRequests;
+
+/// 坐标系类型: 0=WGS84, 1=GCJ02, 2=BD09
+@property (nonatomic, assign) NSInteger coordinateType;
+
+/// 是否翻转Y坐标 (TMS格式需要翻转)
+@property (nonatomic, assign) BOOL flipY;
+
+/// 是否启用高清模式 (Retina屏幕优化)
+/// 启用后会请求更高级别的瓦片以提高清晰度
+@property (nonatomic, assign) BOOL retinaMode;
 
 /// 从 AMapTileOverlay 创建
 + (instancetype)tileOverlayWithModel:(AMapTileOverlay *)model;

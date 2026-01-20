@@ -119,6 +119,19 @@ class TileOverlay extends BaseOverlay {
   /// 最大并行请求数（默认4）
   final int maxConcurrentRequests;
 
+  /// 坐标系类型: 0=WGS84, 1=GCJ02, 2=BD09 (默认0)
+  /// 用于瓦片服务与高德地图坐标系对齐
+  final int coordinateType;
+
+  /// 是否翻转Y坐标 (TMS格式需要设置为true)
+  /// TMS格式的Y坐标从下往上增加，需要翻转
+  final bool flipY;
+
+  /// 是否启用高清模式 (Retina屏幕优化)
+  /// 启用后会请求更高级别的瓦片 (z+1) 并合成为 512x512 的高清瓦片
+  /// 适用于 Retina 屏幕，可显著提升瓦片清晰度
+  final bool retinaMode;
+
   TileOverlay({
     required this.tileProvider,
     this.visible = true,
@@ -132,6 +145,9 @@ class TileOverlay extends BaseOverlay {
     this.memoryCacheSize = 50,
     this.preloadMargin = 1,
     this.maxConcurrentRequests = 4,
+    this.coordinateType = 0,
+    this.flipY = false,
+    this.retinaMode = false,
   }) : super();
 
   /// 复制并修改属性
@@ -148,6 +164,9 @@ class TileOverlay extends BaseOverlay {
     int? memoryCacheSizeParam,
     int? preloadMarginParam,
     int? maxConcurrentRequestsParam,
+    int? coordinateTypeParam,
+    bool? flipYParam,
+    bool? retinaModeParam,
   }) {
     TileOverlay copy = TileOverlay(
       tileProvider: tileProviderParam ?? tileProvider,
@@ -162,6 +181,9 @@ class TileOverlay extends BaseOverlay {
       memoryCacheSize: memoryCacheSizeParam ?? memoryCacheSize,
       preloadMargin: preloadMarginParam ?? preloadMargin,
       maxConcurrentRequests: maxConcurrentRequestsParam ?? maxConcurrentRequests,
+      coordinateType: coordinateTypeParam ?? coordinateType,
+      flipY: flipYParam ?? flipY,
+      retinaMode: retinaModeParam ?? retinaMode,
     );
     copy.setIdForCopy(id);
     return copy;
@@ -193,6 +215,9 @@ class TileOverlay extends BaseOverlay {
     addIfPresent('memoryCacheSize', memoryCacheSize);
     addIfPresent('preloadMargin', preloadMargin);
     addIfPresent('maxConcurrentRequests', maxConcurrentRequests);
+    addIfPresent('coordinateType', coordinateType);
+    addIfPresent('flipY', flipY);
+    addIfPresent('retinaMode', retinaMode);
 
     return json;
   }
@@ -214,7 +239,10 @@ class TileOverlay extends BaseOverlay {
         memoryCacheEnabled == other.memoryCacheEnabled &&
         memoryCacheSize == other.memoryCacheSize &&
         preloadMargin == other.preloadMargin &&
-        maxConcurrentRequests == other.maxConcurrentRequests;
+        maxConcurrentRequests == other.maxConcurrentRequests &&
+        coordinateType == other.coordinateType &&
+        flipY == other.flipY &&
+        retinaMode == other.retinaMode;
   }
 
   @override
@@ -232,6 +260,9 @@ class TileOverlay extends BaseOverlay {
         memoryCacheSize,
         preloadMargin,
         maxConcurrentRequests,
+        coordinateType,
+        flipY,
+        retinaMode,
       ]);
 }
 
