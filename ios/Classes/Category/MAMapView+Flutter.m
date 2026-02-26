@@ -120,13 +120,13 @@
             [self setCustomMapStyleOptions:styleOption];
         }
     }
-    
+
     NSDictionary *locationStyleDict = dict[@"myLocationStyle"];
     if (locationStyleDict) {
         BOOL showUserLocation = [locationStyleDict[@"enabled"] boolValue];
         self.showsUserLocation = showUserLocation;
         if (showUserLocation) {
-            self.userTrackingMode = MAUserTrackingModeNone;//强制设置为非追随模式，追随模式后续在demo中，使用自定义定位样式实现
+            self.userTrackingMode = MAUserTrackingModeFollowWithHeading;//强制设置为非追随模式，追随模式后续在demo中，使用自定义定位样式实现
             if (locationStyleDict[@"circleFillColor"] != nil
                 || locationStyleDict[@"circleStrokeColor"] != nil
                 || locationStyleDict[@"circleStrokeWidth"] != nil
@@ -219,7 +219,7 @@
     if (rotateCameraEnable) {
         self.rotateCameraEnabled = [rotateCameraEnable boolValue];
     }
-    
+
     NSNumber *logoPosition = dict[@"logoPosition"];
     NSNumber *logoBottomMargin = dict[@"logoBottomMargin"];
     NSNumber *logoLeftMargin = dict[@"logoLeftMargin"];
@@ -272,7 +272,7 @@
     } else if ([mapLanguage isEqualToString:@"en"]) {
         self.mapLanguage = @1;
     }
-    
+
 }
 
 @end
