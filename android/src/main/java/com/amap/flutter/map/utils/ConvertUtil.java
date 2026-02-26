@@ -65,8 +65,7 @@ public class ConvertUtil {
 
         Class<MapsInitializer> clazz = MapsInitializer.class;
 
-        if (null != hasContainsObj
-                && null != hasShowObj) {
+        if (null != hasContainsObj && null != hasShowObj) {
             boolean hasContains = toBoolean(hasContainsObj);
             boolean hasShow = toBoolean(hasShowObj);
             //使用反射的方法调用适配之前的版本
@@ -98,8 +97,7 @@ public class ConvertUtil {
         Object keyObject = keyMap.get("androidKey");
         if (null != keyObject) {
             final String aKey = toString(keyObject);
-            if (TextUtils.isEmpty(apiKey)
-                    || !aKey.equals(apiKey)) {
+            if (TextUtils.isEmpty(apiKey) || !aKey.equals(apiKey)) {
                 apiKey = aKey;
                 MapsInitializer.setApiKey(apiKey);
             }
@@ -122,8 +120,7 @@ public class ConvertUtil {
             case "newLatLng":
                 return CameraUpdateFactory.newLatLng(toLatLng(data.get(1)));
             case "newLatLngBounds":
-                return CameraUpdateFactory.newLatLngBounds(
-                        toLatLngBounds(data.get(1)), toPixels(data.get(2)));
+                return CameraUpdateFactory.newLatLngBounds(toLatLngBounds(data.get(1)), toPixels(data.get(2)));
             case "newLatLngZoom":
                 return CameraUpdateFactory.newLatLngZoom(toLatLng(data.get(1)), toFloat(data.get(2)));
             case "scrollBy":
@@ -339,7 +336,7 @@ public class ConvertUtil {
             myLocationStyle.showMyLocation(toBoolean(enableData));
         }
         //两端差异比较大，Android端设置成跟随但是不移动到中心点模式，与iOS端兼容
-        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_FOLLOW_NO_CENTER);
+        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER);
 //        final Object trackingMode = map.get("trackingMode");
 //        if (null != trackingMode) {
 //            int trackingModeIndex = toInt(trackingMode);
@@ -374,10 +371,7 @@ public class ConvertUtil {
             return null;
         }
 
-        if (location.getAltitude() > 90 ||
-                location.getAltitude() < -90 ||
-                location.getLongitude() > 180 ||
-                location.getLongitude() < -180) {
+        if (location.getAltitude() > 90 || location.getAltitude() < -90 || location.getLongitude() > 180 || location.getLongitude() < -180) {
             return null;
         }
 
@@ -404,19 +398,15 @@ public class ConvertUtil {
                 }
             case "fromAsset":
                 if (data.size() == 2) {
-                    return BitmapDescriptorFactory.fromAsset(
-                            flutterLoader.getLookupKeyForAsset(toString(data.get(1))));
+                    return BitmapDescriptorFactory.fromAsset(flutterLoader.getLookupKeyForAsset(toString(data.get(1))));
                 } else {
-                    return BitmapDescriptorFactory.fromAsset(
-                            flutterLoader.getLookupKeyForAsset(toString(data.get(1)), toString(data.get(2))));
+                    return BitmapDescriptorFactory.fromAsset(flutterLoader.getLookupKeyForAsset(toString(data.get(1)), toString(data.get(2))));
                 }
             case "fromAssetImage":
                 if (data.size() == 3) {
-                    return BitmapDescriptorFactory.fromAsset(
-                            flutterLoader.getLookupKeyForAsset(toString(data.get(1))));
+                    return BitmapDescriptorFactory.fromAsset(flutterLoader.getLookupKeyForAsset(toString(data.get(1))));
                 } else {
-                    throw new IllegalArgumentException(
-                            "'fromAssetImage' Expected exactly 3 arguments, got: " + data.size());
+                    throw new IllegalArgumentException("'fromAssetImage' Expected exactly 3 arguments, got: " + data.size());
                 }
             case "fromBytes":
                 return getBitmapFromBytes(data);
@@ -443,8 +433,7 @@ public class ConvertUtil {
                 throw new IllegalArgumentException("Unable to interpret bytes as a valid image.", e);
             }
         } else {
-            throw new IllegalArgumentException(
-                    "fromBytes should have exactly one argument, the bytes. Got: " + data.size());
+            throw new IllegalArgumentException("fromBytes should have exactly one argument, the bytes. Got: " + data.size());
         }
     }
 
